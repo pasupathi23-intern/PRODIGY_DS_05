@@ -1,0 +1,56 @@
+# Install required libraries (if needed)
+# !pip install folium
+
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import folium
+from folium.plugins import HeatMap
+
+# Load dataset
+df = pd.read_csv('US_Accidents_Dec21_updated.csv')  # Replace with your local path
+
+# Preview data
+print(df[['Start_Time', 'Weather_Condition', 'Severity', 'Start_Lat', 'Start_Lng']].head())
+
+# Convert Start_Time to datetime
+df['Start_Time'] = pd.to_datetime(df['Start_Time'])
+
+# Extract hour and day
+df['Hour'] = df['Start_Time'].dt.hour
+df['Weekday'] = df['Start_Time'].dt.day_name()
+
+# -------------------------------
+# Pattern 1: Accidents by Hour
+sns.countplot(x='Hour', data=df, palette='Blues')
+plt.title("Accidents by Hour of the Day")
+plt.show()
+
+# -------------------------------
+# Pattern 2: Accidents by Weather Condition
+top_weather = df['Weather_Condition'].value_counts().nlargest(10)
+sns.barplot(x=top_weather.values, y=top_weather.index, palette='magma')
+plt.title("Top 10 Weather Conditions during Accidents")
+plt.xlabel("Number of Accidents")
+plt.show()
+
+# -------------------------------
+# Pattern 3: Accidents by Weekday
+sns.countplot(x='Weekday', data=df, order=[
+    'Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'], palette='coolwarm')
+plt.title("Accidents by Weekday")
+plt.xticks(rotation=45)
+plt.show()
+
+# -------------------------------
+# Heatmap: Accident Hotspots
+map_center = [37.0902, -95.7129]  # Center of the US
+map_ = folium.Map(location=map_center, zoom_start=4)
+
+# Sample for performance
+heat_df = df[['Start_Lat', 'Start_Lng']].dropna().sample(10000)
+
+# Add HeatMap
+HeatMap(data=heat_df.values.tolist(), radius=8).add_to(map_)
+map_.save("us_accident_heatmap.html")
+print("🗺️ Heatmap saved as us_accident_heatmap.html")
